@@ -96,32 +96,27 @@ h2{font-size:23px;font-weight:800;margin-bottom:17px}
         <span class="brand-option-name">Lumora.cv</span>
       </label>
     </div>
-    <h2 class="section-title">Paket Hemat</h2>
+    <h2 class="section-title">Daftar Harga</h2>
     <p class="hint">Pilih layanan yang dibutuhkan. Total harga dihitung otomatis.</p>
-
-    <div class="promo-info">
-      <strong>Promo Diskon</strong>
-      <p>Pesan minimal 2 layanan utama untuk mendapatkan potongan harga.</p>
-    </div>
     <label class="service">
       <input type="checkbox" value="CV" data-price="10000" data-diskon="true">
       <span class="service-info"><strong>CV</strong><small>Pembuatan CV profesional</small></span>
       <span class="service-price">Rp10.000</span>
     </label>
     <label class="service">
-      <input type="checkbox" value="Surat Lamaran" data-price="9000" data-diskon="true">
+      <input type="checkbox" value="Surat Lamaran" data-price="10000" data-diskon="true">
       <span class="service-info"><strong>Surat Lamaran</strong><small>Surat lamaran kerja profesional</small></span>
-      <span class="service-price">Rp9.000</span>
+      <span class="service-price">Rp10.000</span>
     </label>
     <label class="service">
-      <input type="checkbox" value="Surat Resign" data-price="8000" data-diskon="true">
+      <input type="checkbox" value="Surat Resign" data-price="10000" data-diskon="true">
       <span class="service-info"><strong>Surat Resign</strong><small>Surat pengunduran diri kerja</small></span>
-      <span class="service-price">Rp8.000</span>
+      <span class="service-price">Rp10.000</span>
     </label>
     <label class="service">
-      <input type="checkbox" value="Edit Foto" data-price="7000" data-diskon="true">
+      <input type="checkbox" value="Edit Foto" data-price="8000" data-diskon="true">
       <span class="service-info"><strong>Edit Foto</strong><small>Edit foto formal profesional</small></span>
-      <span class="service-price">Rp7.000</span>
+      <span class="service-price">Rp8.000</span>
     </label>
     <label class="service">
       <input type="checkbox" value="Gabung Berkas PDF" data-price="5000" data-diskon="false">
@@ -132,8 +127,7 @@ h2{font-size:23px;font-weight:800;margin-bottom:17px}
     <div class="summary">
       <h2>Ringkasan Pesanan</h2>
       <div class="row"><span>Jumlah layanan</span><strong id="jumlah">0 layanan</strong></div>
-      <div class="row"><span>Harga asli</span><strong id="hargaAsli">Rp0</strong></div>
-      <div class="row"><span>Diskon</span><strong id="diskon" class="discount">Rp0</strong></div>
+      <div class="row"><span>Subtotal</span><strong id="hargaAsli">Rp0</strong></div>
       <div class="row"><span>Keterangan</span><strong id="keterangan">Belum memilih layanan</strong></div>
       <div class="row total-row"><span>Total harga</span><strong class="total" id="total">Rp0</strong></div>
       <p class="empty" id="pesanKosong">Pilih layanan untuk melihat total pesanan.</p>
@@ -183,7 +177,6 @@ function ambilPesanan() {
   checks.forEach(input => {
     const card = input.closest(".service");
     card.classList.toggle("selected", input.checked);
-
     if (!input.checked) return;
 
     const harga = Number(input.dataset.price);
@@ -197,35 +190,18 @@ function ambilPesanan() {
     }
   });
 
-  let diskon = 0;
-  if (jumlahUtama === 2) diskon = 2000;
-  if (jumlahUtama === 3) diskon = 3000;
-  if (jumlahUtama === 4) diskon = 4000;
-
   const hargaAsli = hargaUtama + hargaGabung;
-  const total = hargaAsli - diskon;
-
-  return {pilihan, hargaUtama, hargaGabung, jumlahUtama, diskon, hargaAsli, total};
+  const total = hargaAsli;
+  return {pilihan, hargaUtama, hargaGabung, jumlahUtama, diskon: 0, hargaAsli, total};
 }
 
 function hitungTotal() {
   const d = ambilPesanan();
-
   document.getElementById("jumlah").textContent = d.pilihan.length + " layanan";
-
-  const hargaEl = document.getElementById("hargaAsli");
-  hargaEl.textContent = rupiah(d.hargaAsli);
-  hargaEl.classList.toggle("original", d.diskon > 0);
-
-  document.getElementById("diskon").textContent =
-    d.diskon > 0 ? "-" + rupiah(d.diskon) : rupiah(0);
+  document.getElementById("hargaAsli").textContent = rupiah(d.hargaAsli);
 
   let keterangan = "Belum memilih layanan";
-  if (d.jumlahUtama === 1) keterangan = "1 layanan utama";
-  if (d.jumlahUtama === 2) keterangan = "2 layanan utama";
-  if (d.jumlahUtama === 3) keterangan = "3 layanan utama";
-  if (d.jumlahUtama === 4) keterangan = "4 layanan utama";
-
+  if (d.jumlahUtama > 0) keterangan = d.jumlahUtama + " layanan utama";
   if (d.hargaGabung > 0 && d.jumlahUtama > 0) {
     keterangan += " + Gabung PDF";
   } else if (d.hargaGabung > 0) {
