@@ -34,7 +34,7 @@ h2{font-size:23px;font-weight:800;margin-bottom:17px}
 .service-info{flex:1;min-width:0}
 .service-info strong{display:block;font-size:14px;margin-bottom:4px}
 .service-info small{display:block;color:#555;font-size:11px;line-height:1.45}
-.service-price{font-size:13px;font-weight:bold;white-space:nowrap}
+.service-price{font-size:13px;font-weight:bold;white-space:nowrap}.pdf-counter{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}.qty-btn{width:32px;height:32px;border:1px solid #555;border-radius:9px;background:#fff;font-size:22px;font-weight:bold;line-height:1;cursor:pointer}.pdf-harga{font-size:12px;font-weight:bold;color:#176a38}
 .summary{background:rgba(255,255,255,.4);border:1.5px solid white;border-radius:17px;padding:17px 14px;margin-top:22px}
 .summary h2{font-size:21px;margin-bottom:20px}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;font-size:13px;margin:0 0 15px;line-height:1.5}
@@ -126,11 +126,18 @@ h2{font-size:23px;font-weight:800;margin-bottom:17px}
 <span class="service-info"><strong>Edit Foto</strong><small>Edit foto formal profesional</small></span>
 <span class="service-price">Rp8.000</span>
 </label>
-<label class="service">
-<input data-diskon="false" data-price="5000" type="checkbox" value="Gabung Berkas PDF"/>
-<span class="service-info"><strong>Gabung Berkas PDF</strong><small>Gabungkan beberapa dokumen menjadi satu file PDF</small></span>
-<span class="service-price">Rp5.000</span>
-</label>
+<div class="service" id="pdfService">
+<input id="pdfCheck" data-diskon="false" data-price="2500" type="checkbox" value="Gabung Berkas PDF"/>
+<span class="service-info"><strong>Gabung Berkas PDF</strong><small>Gabungkan berkas menjadi satu file PDF (Rp2.500 per dokumen, minimal 2 dokumen).</small>
+<span class="pdf-counter" id="pdfCounter" style="display:none">
+<button type="button" class="qty-btn" onclick="ubahJumlahPDF(-1,event)" aria-label="Kurangi jumlah dokumen">−</button>
+<strong id="jumlahPDF">0</strong>
+<button type="button" class="qty-btn" onclick="ubahJumlahPDF(1,event)" aria-label="Tambah jumlah dokumen">+</button>
+<span class="pdf-harga" id="hargaPDF">Rp0</span>
+</span>
+</span>
+<span class="service-price" id="hargaPDFLabel">Rp2.500</span>
+</div>
 <div class="summary">
 <h2>Ringkasan Pesanan</h2>
 <div class="row"><span>Jumlah layanan</span><strong id="jumlah">0 layanan</strong></div>
@@ -153,15 +160,11 @@ h2{font-size:23px;font-weight:800;margin-bottom:17px}
 const checks = document.querySelectorAll('.service input[type="checkbox"]');
 const brandInputs = document.querySelectorAll('input[name="brand"]');
 let selectedBrand = '';
-const orderButton = document.querySelector('.wa-btn');
-orderButton.disabled = true;
-orderButton.style.opacity = '.55';
-orderButton.style.cursor = 'not-allowed';
+const pdfCheck = document.getElementById("pdfCheck");
+let jumlahDokumenPDF = 0;
+
 brandInputs.forEach(input => input.addEventListener('change', () => {
   selectedBrand = input.value;
-  orderButton.disabled = false;
-  orderButton.style.opacity = '1';
-  orderButton.style.cursor = 'pointer';
   document.getElementById('optionJasaora').classList.toggle('selected', selectedBrand === 'Jasaora.id');
   document.getElementById('optionLumora').classList.toggle('selected', selectedBrand === 'Lumora.cv');
   document.getElementById('optionCvmurah').classList.toggle('selected', selectedBrand === 'cvmurah.indo');
@@ -174,6 +177,19 @@ function rupiah(n) {
   return "Rp" + Number(n).toLocaleString("id-ID");
 }
 
+function ubahJumlahPDF(perubahan, event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  jumlahDokumenPDF = Math.max(0, jumlahDokumenPDF + perubahan);
+  document.getElementById("jumlahPDF").textContent = jumlahDokumenPDF;
+  document.getElementById("hargaPDF").textContent = rupiah(jumlahDokumenPDF * 2500);
+  hitungTotal();
+}
+
+pdfCheck.addEventListener("change", () => {
+  document.getElementById("pdfCounter").style.display = pdfCheck.checked ? "flex" : "none";
+  hitungTotal();
+});
+
 function ambilPesanan() {
   const pilihan = [];
   let hargaUtama = 0;
@@ -185,20 +201,19 @@ function ambilPesanan() {
     card.classList.toggle("selected", input.checked);
     if (!input.checked) return;
 
-    const harga = Number(input.dataset.price);
-    pilihan.push({nama: input.value, harga});
-
-    if (input.dataset.diskon === "false") {
-      hargaGabung += harga;
+    if (input === pdfCheck) {
+      hargaGabung = jumlahDokumenPDF * 2500;
+      pilihan.push({nama: input.value + " (" + jumlahDokumenPDF + " dokumen)", harga: hargaGabung, isPDF:true});
     } else {
+      const harga = Number(input.dataset.price);
+      pilihan.push({nama: input.value, harga});
       hargaUtama += harga;
       jumlahUtama++;
     }
   });
 
   const hargaAsli = hargaUtama + hargaGabung;
-  const total = hargaAsli;
-  return {pilihan, hargaUtama, hargaGabung, jumlahUtama, diskon: 0, hargaAsli, total};
+  return {pilihan, hargaUtama, hargaGabung, jumlahUtama, diskon: 0, hargaAsli, total: hargaAsli};
 }
 
 function hitungTotal() {
@@ -208,37 +223,47 @@ function hitungTotal() {
 
   let keterangan = "Belum memilih layanan";
   if (d.jumlahUtama > 0) keterangan = d.jumlahUtama + " layanan utama";
-  if (d.hargaGabung > 0 && d.jumlahUtama > 0) {
-    keterangan += " + Gabung PDF";
-  } else if (d.hargaGabung > 0) {
-    keterangan = "Gabung Berkas PDF";
-  }
+  if (d.hargaGabung > 0 && d.jumlahUtama > 0) keterangan += " + Gabung PDF";
+  else if (pdfCheck.checked) keterangan = "Gabung Berkas PDF (" + jumlahDokumenPDF + " dokumen)";
 
   document.getElementById("keterangan").textContent = keterangan;
   document.getElementById("total").textContent = rupiah(d.total);
-  document.getElementById("pesanKosong").style.display =
-    d.pilihan.length === 0 ? "block" : "none";
+  document.getElementById("pesanKosong").style.display = d.pilihan.length === 0 ? "block" : "none";
 }
 
-checks.forEach(input => input.addEventListener("change", hitungTotal));
+checks.forEach(input => {
+  if (input !== pdfCheck) input.addEventListener("change", hitungTotal);
+});
 
 function orderWhatsApp() {
   const d = ambilPesanan();
 
   if (!selectedBrand) {
-    alert("Silakan pilih Jasaora.id, Lumora.cv, atau cvmurah.indo terlebih dahulu.");
+    alert("Silakan pilih informasi dari mana terlebih dahulu.");
     document.querySelector(".brand-choice").scrollIntoView({behavior:"smooth", block:"center"});
+    document.querySelector(".brand-choice").style.outline = "3px solid #ef4444";
+    setTimeout(() => document.querySelector(".brand-choice").style.outline = "", 2200);
     return;
   }
 
   if (d.pilihan.length === 0) {
     alert("Silakan pilih minimal satu layanan terlebih dahulu.");
+    document.querySelector(".service").scrollIntoView({behavior:"smooth", block:"center"});
+    return;
+  }
+
+  if (pdfCheck.checked && jumlahDokumenPDF < 2) {
+    alert("Gabung Berkas PDF minimal 2 dokumen. Tekan tombol + sampai jumlahnya minimal 2.");
+    document.getElementById("pdfService").scrollIntoView({behavior:"smooth", block:"center"});
+    document.getElementById("pdfCounter").style.display = "flex";
+    document.getElementById("pdfService").style.outline = "3px solid #ef4444";
+    setTimeout(() => document.getElementById("pdfService").style.outline = "", 2200);
     return;
   }
 
   const daftar = d.pilihan.map((item, i) =>
     (i + 1) + ". " + item.nama + " — " + rupiah(item.harga)
-  ).join("\n");
+  ).join("\\n");
 
   const pesan = `/harga
 Halo ${selectedBrand}, saya ingin memesan layanan.
